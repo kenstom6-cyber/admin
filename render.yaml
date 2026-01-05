@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: remote-key-manager
+    env: node
+    buildCommand: cd server && npm install
+    startCommand: cd server && node index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
