@@ -438,3 +438,360 @@ document.getElementById('serverKey').addEventListener('change', function() {
         localStorage.setItem('serverKey', currentServerKey);
     }
 });
+// ... (giữ nguyên phần trước)
+
+// Hiển thị section
+function showSection(sectionId) {
+    // Ẩn tất cả sections
+    document.querySelectorAll('.content-section').forEach(section => {
+        section.classList.remove('active');
+    });
+    
+    // Hiện section được chọn
+    document.getElementById(`${sectionId}-section`).classList.add('active');
+    
+    // Cập nhật tiêu đề
+    const titles = {
+        'dashboard': 'Dashboard',
+        'create-keys': 'Tạo Key Mới',
+        'manage-keys': 'Quản lý Key',
+        'validate-key': 'Kiểm tra Key',
+        'server-config': 'Cấu hình Server',
+        'api-docs': 'API & Shell Script'
+    };
+    
+    document.getElementById('pageTitle').textContent = titles[sectionId];
+    
+    // Cập nhật menu active
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    
+    document.querySelector(`.menu-item[onclick="showSection('${sectionId}')"]`).classList.add('active');
+    
+    // Load dữ liệu nếu cần
+    if (sectionId === 'dashboard') {
+        loadRecentActivity();
+    }
+}
+
+// Tạo server key mới
+async function generateServerKey() {
+    if (!confirm('Bạn có chắc muốn tạo Server Key mới? Key cũ sẽ bị vô hiệu hóa.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/generate-server-key', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Server-Key': currentServerKey
+            },
+            body: JSON.stringify({ length: 32 })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            alert(`Server Key mới đã được tạo:\n\n${result.serverKey}\n\n${result.message}`);
+            
+            // Cập nhật input
+            document.getElementById('serverKey').value = result.serverKey;
+            currentServerKey = result.serverKey;
+            localStorage.setItem('serverKey', result.serverKey);
+            
+            // Cập nhật trạng thái
+            updateServerStatus(true);
+        } else {
+            const error = await response.json();
+            alert('Lỗi: ' + error.error);
+        }
+    } catch (error) {
+        alert('Lỗi khi tạo Server Key!');
+        console.error(error);
+    }
+}
+
+// Tải shell script
+function downloadScript(type) {
+    if (!currentServerKey) {
+        alert('Vui lòng kết nối với Server Key trước!');
+        return;
+    }
+    
+    const url = `/api/shell-script/${type}`;
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${type}.sh`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// Reset form tạo key
+function resetCreateForm() {
+    document.getElementById('keyCount').value = 1;
+    document.getElementById('keyLength').value = 16;
+    document.getElementById('keyDuration').value = 30;
+    document.getElementById('keyPrefix').value = '';
+    document.getElementById('keyNote').value = '';
+    document.getElementById('keyPreview').style.display = 'none';
+}
+
+// Sao chép key đã tạo
+function copyCreatedKeys() {
+    const previewContent = document.getElementById('previewContent').textContent;
+    navigator.clipboard.writeText(previewContent).then(() => {
+        showNotification('Đã sao chép tất cả key!');
+    });
+}
+
+// Hiển thị thông báo
+function showNotification(message, type = 'info') {
+    // Tạo notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'}"></i>
+        <span>${message}</span>
+    `;
+    
+    // Thêm vào body
+    document.body.appendChild(notification);
+    
+    // Hiển thị
+    setTimeout(() => notification.classList.add('show'), 100);
+    
+    // Tự động ẩn
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+// Cập nhật trạng thái server
+function updateServerStatus(connected) {
+    const statusIndicator = document.querySelector('.status-indicator .dot');
+    const statusText = document.querySelector('.status-indicator span');
+    
+    if (connected) {
+        statusIndicator.classList.add('connected');
+        statusText.textContent = 'Đã kết nối';
+    } else {
+        statusIndicator.classList.remove('connected');
+        statusText.textContent = 'Ngắt kết nối';
+    }
+}
+
+// Tải hoạt động gần đây
+function loadRecentActivity() {
+    if (!allKeys.length) return;
+    
+    const activityList = document.getElementById('activityList');
+    const recentKeys = [...allKeys]
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 10);
+    
+    activityList.innerHTML = '';
+    
+    recentKeys.forEach(key => {
+        const activityItem = document.createElement('div');
+        activityItem.className = 'activity-item';
+        
+        let icon = 'key';
+        let text = `Key mới: ${key.key.substring(0, 8)}...`;
+        
+        if (key.history && key.history.length > 0) {
+            const lastAction = key.history[key.history.length - 1];
+            text = `${lastAction.action}: ${key.key.substring(0, 8)}...`;
+            
+            if (lastAction.action.includes('khóa')) icon = 'lock';
+            else if (lastAction.action.includes('mở')) icon = 'unlock';
+            else if (lastAction.action.includes('tạm')) icon = 'pause';
+        }
+        
+        activityItem.innerHTML = `
+            <div class="activity-icon">
+                <i class="fas fa-${icon}"></i>
+            </div>
+            <div class="activity-info">
+                <p>${text}</p>
+                <div class="activity-time">
+                    ${new Date(key.createdAt).toLocaleDateString('vi-VN')}
+                </div>
+            </div>
+        `;
+        
+        activityList.appendChild(activityItem);
+    });
+}
+
+// Lưu cài đặt
+async function saveSettings() {
+    const settings = {
+        maxKeys: parseInt(document.getElementById('maxKeys').value),
+        defaultExpiry: parseInt(document.getElementById('defaultExpiry').value),
+        autoCleanup: document.getElementById('autoCleanup').checked
+    };
+    
+    try {
+        const response = await fetch('/api/settings', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Server-Key': currentServerKey
+            },
+            body: JSON.stringify({ settings })
+        });
+        
+        if (response.ok) {
+            showNotification('Đã lưu cài đặt!', 'success');
+        } else {
+            showNotification('Lỗi khi lưu cài đặt!', 'error');
+        }
+    } catch (error) {
+        showNotification('Lỗi kết nối!', 'error');
+    }
+}
+
+// Hiển thị/ẩn server key
+function toggleKeyVisibility() {
+    const keyDisplay = document.querySelector('.key-display span');
+    const eyeButton = document.querySelector('.btn-show i');
+    
+    if (keyDisplay.textContent.includes('•')) {
+        keyDisplay.textContent = currentServerKey;
+        eyeButton.className = 'fas fa-eye-slash';
+    } else {
+        keyDisplay.textContent = '••••••••••••••••';
+        eyeButton.className = 'fas fa-eye';
+    }
+}
+
+// Cập nhật hàm connectServer
+async function connectServer() {
+    const serverKey = document.getElementById('serverKey').value;
+    if (!serverKey) {
+        showNotification('Vui lòng nhập Server Key!', 'warning');
+        return;
+    }
+    
+    currentServerKey = serverKey;
+    
+    try {
+        const response = await fetch('/api/keys', {
+            headers: {
+                'X-Server-Key': serverKey
+            }
+        });
+        
+        if (response.ok) {
+            allKeys = await response.json();
+            loadKeys();
+            loadStats();
+            loadRecentActivity();
+            updateServerStatus(true);
+            showNotification('Kết nối thành công!', 'success');
+            
+            // Lưu vào localStorage
+            localStorage.setItem('serverKey', serverKey);
+            
+            // Hiển thị số lượng thông báo
+            const expiredCount = allKeys.filter(k => 
+                new Date(k.expiresAt) < new Date()
+            ).length;
+            document.getElementById('notificationCount').textContent = expiredCount;
+        } else {
+            const error = await response.json();
+            showNotification('Lỗi: ' + error.error, 'error');
+            updateServerStatus(false);
+            currentServerKey = '';
+        }
+    } catch (error) {
+        showNotification('Lỗi kết nối đến server!', 'error');
+        updateServerStatus(false);
+        console.error(error);
+    }
+}
+
+// Thêm CSS cho notification
+const style = document.createElement('style');
+style.textContent = `
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transform: translateX(150%);
+    transition: transform 0.3s ease;
+    z-index: 3000;
+    min-width: 300px;
+}
+
+.notification.show {
+    transform: translateX(0);
+}
+
+.notification-success {
+    border-left: 4px solid var(--success);
+}
+
+.notification-error {
+    border-left: 4px solid var(--danger);
+}
+
+.notification-warning {
+    border-left: 4px solid var(--warning);
+}
+
+.notification i {
+    font-size: 20px;
+}
+
+.notification-success i {
+    color: var(--success);
+}
+
+.notification-error i {
+    color: var(--danger);
+}
+
+.notification-warning i {
+    color: var(--warning);
+}
+`;
+
+document.head.appendChild(style);
+
+// Khởi tạo
+document.addEventListener('DOMContentLoaded', function() {
+    // Load saved server key
+    const savedKey = localStorage.getItem('serverKey');
+    if (savedKey) {
+        document.getElementById('serverKey').value = savedKey;
+        connectServer();
+    }
+    
+    // Set up event listeners
+    setupEventListeners();
+});
+
+function setupEventListeners() {
+    // Enter key để kết nối
+    document.getElementById('serverKey').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') connectServer();
+    });
+    
+    // Real-time search
+    document.getElementById('searchKey').addEventListener('input', loadKeys);
+    document.getElementById('filterStatus').addEventListener('change', loadKeys);
+    document.getElementById('sortBy').addEventListener('change', loadKeys);
+}
+
+// ... (giữ nguyên các hàm khác)
