@@ -262,3 +262,192 @@ app.listen(PORT, () => {
   console.log(`Default server key: admin123`);
   console.log(`Change this key immediately in the admin panel!`);
 });
+// ... (giữ nguyên phần đầu)
+
+// Thêm endpoint mới cho shell script
+app.get('/api/shell-script/:type', (req, res) => {
+    const { type } = req.params;
+    const scripts = {
+        'validate': `#!/bin/bash
+
+# Remote Key Manager - Validate Key Script
+# Usage: ./validate.sh YOUR_KEY
+
+KEY="$1"
+SERVER_URL="${req.protocol}://${req.get('host')}"
+
+if [ -z "$KEY" ]; then
+    echo "Usage: $0 <key>"
+    exit 1
+fi
+
+RESPONSE=$(curl -s -X POST "$SERVER_URL/api/validate" \\
+  -H "Content-Type: application/json" \\
+  -d "{\\"key\\": \\"$KEY\\"}")
+
+VALID=$(echo $RESPONSE | grep -o '"valid":true')
+
+if [ ! -z "$VALID" ]; then
+    echo "✅ Key hợp lệ"
+    EXPIRES=$(echo $RESPONSE | grep -o '"expiresAt":"[^"]*"' | cut -d'"' -f4)
+    echo "📅 Hết hạn: $(date -d "$EXPIRES" '+%d/%m/%Y %H:%M')"
+    NOTE=$(echo $RESPONSE | grep -o '"note":"[^"]*"' | cut -d'"' -f4)
+    if [ ! -z "$NOTE" ]; then
+        echo "📝 Ghi chú: $NOTE"
+    fi
+    exit 0
+else
+    echo "❌ Key không hợp lệ"
+    MSG=$(echo $RESPONSE | grep -o '"message":"[^"]*"' | cut -d'"' -f4)
+    echo "📝 Lý do: $MSG"
+    exit 1
+fi`,
+
+        'create_keys': `#!/bin/bash
+
+# Remote Key Manager - Create Keys Script
+# Usage: ./create_keys.sh SERVER_KEY COUNT DAYS [NOTE]
+
+SERVER_KEY="$1"
+COUNT="$2"
+DAYS="$3"
+NOTE="$4"
+SERVER_URL="${req.protocol}://${req.get('host')}"
+
+if [ -z "$SERVER_KEY" ] || [ -z "$COUNT" ] || [ -z "$DAYS" ]; then
+    echo "Usage: $0 <server_key> <count> <days> [note]"
+    exit 1
+fi
+
+RESPONSE=$(curl -s -X POST "$SERVER_URL/api/keys/create" \\
+  -H "X-Server-Key: $SERVER_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d "{
+    \\"count\\": $COUNT,
+    \\"duration\\": $DAYS,
+    \\"note\\": \\"$NOTE\\"
+  }")
+
+if echo $RESPONSE | grep -q '"success":true'; then
+    echo "✅ Đã tạo $COUNT key thành công"
+    echo "$RESPONSE" | grep -o '"key":"[^"]*"' | cut -d'"' -f4 | while read KEY; do
+        echo "🔑 $KEY"
+    done
+else
+    echo "❌ Lỗi khi tạo key"
+    ERROR=$(echo $RESPONSE | grep -o '"error":"[^"]*"' | cut -d'"' -f4)
+    echo "📝 Chi tiết: $ERROR"
+    exit 1
+fi`,
+
+        'manage_keys': `#!/bin/bash
+
+# Remote Key Manager - Manage Keys Script
+# Usage: ./manage_keys.sh SERVER_KEY [ACTION] [KEY_ID]
+
+SERVER_KEY="$1"
+ACTION="$2"
+KEY_ID="$3"
+SERVER_URL="${req.protocol}://${req.get('host')}"
+
+if [ -z "$SERVER_KEY" ]; then
+    echo "Usage:"
+    echo "  $0 <server_key> list"
+    echo "  $0 <server_key> lock <key_id>"
+    echo "  $0 <server_key> unlock <key_id>"
+    echo "  $0 <server_key> suspend <key_id>"
+    echo "  $0 <server_key> delete <key_id>"
+    exit 1
+fi
+
+case $ACTION in
+    "list")
+        curl -s -X GET "$SERVER_URL/api/keys" \\
+          -H "X-Server-Key: $SERVER_KEY" \\
+          -H "Content-Type: application/json" | jq .
+        ;;
+    "lock")
+        curl -s -X PUT "$SERVER_URL/api/keys/$KEY_ID/status" \\
+          -H "X-Server-Key: $SERVER_KEY" \\
+          -H "Content-Type: application/json" \\
+          -d '{"status": "locked"}'
+        ;;
+    "unlock")
+        curl -s -X PUT "$SERVER_URL/api/keys/$KEY_ID/status" \\
+          -H "X-Server-Key: $SERVER_KEY" \\
+          -H "Content-Type: application/json" \\
+          -d '{"status": "active"}'
+        ;;
+    "suspend")
+        curl -s -X PUT "$SERVER_URL/api/keys/$KEY_ID/status" \\
+          -H "X-Server-Key: $SERVER_KEY" \\
+          -H "Content-Type: application/json" \\
+          -d '{"status": "suspended"}'
+        ;;
+    "delete")
+        curl -s -X DELETE "$SERVER_URL/api/keys/$KEY_ID" \\
+          -H "X-Server-Key: $SERVER_KEY"
+        ;;
+    *)
+        echo "❌ Action không hợp lệ"
+        exit 1
+        ;;
+esac
+
+if [ $? -eq 0 ]; then
+    echo "✅ Thao tác thành công"
+else
+    echo "❌ Thao tác thất bại"
+    exit 1
+fi`
+    };
+
+    if (scripts[type]) {
+        res.set('Content-Type', 'text/x-shellscript');
+        res.set('Content-Disposition', `attachment; filename="${type}.sh"`);
+        res.send(scripts[type]);
+    } else {
+        res.status(404).json({ error: 'Script not found' });
+    }
+});
+
+// API để lấy thông tin server cho shell script
+app.get('/api/server-info', (req, res) => {
+    const serverUrl = `${req.protocol}://${req.get('host')}`;
+    res.json({
+        serverUrl,
+        apiEndpoints: {
+            validate: `${serverUrl}/api/validate`,
+            keys: `${serverUrl}/api/keys`,
+            create: `${serverUrl}/api/keys/create`
+        },
+        exampleCommands: {
+            validate: `curl -X POST ${serverUrl}/api/validate -H "Content-Type: application/json" -d '{"key":"YOUR_KEY"}'`,
+            createKey: `curl -X POST ${serverUrl}/api/keys/create -H "X-Server-Key: YOUR_KEY" -H "Content-Type: application/json" -d '{"count":1,"duration":30}'`
+        }
+    });
+});
+
+// API tạo server key mới
+app.post('/api/generate-server-key', (req, res) => {
+    const { length = 32 } = req.body;
+    
+    // Tạo server key mới
+    const newKey = generateKey(length);
+    const db = readDatabase();
+    
+    if (!db) return res.status(500).json({ error: 'Database error' });
+    
+    // Lưu key đã mã hóa
+    db.serverKey = bcrypt.hashSync(newKey, 10);
+    writeDatabase(db);
+    
+    // Trả về key gốc (chỉ lần này)
+    res.json({
+        success: true,
+        serverKey: newKey,
+        message: 'Lưu Server Key này ở nơi an toàn! Nó sẽ không được hiển thị lại.'
+    });
+});
+
+// ... (giữ nguyên phần còn lại)
