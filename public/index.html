@@ -6,73 +6,238 @@
     <title>Remote Key Manager</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
-        <header>
-            <h1><i class="fas fa-key"></i> Remote Key Manager</h1>
-            <div class="server-key-section">
-                <input type="password" id="serverKey" placeholder="Nhập Server Key...">
-                <button onclick="connectServer()">Kết nối</button>
-                <button onclick="showChangeKeyModal()">Đổi Key</button>
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <i class="fas fa-key"></i>
+                <h2>Key Manager</h2>
             </div>
-        </header>
+            
+            <div class="menu">
+                <div class="menu-item active" onclick="showSection('dashboard')">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </div>
+                <div class="menu-item" onclick="showSection('create-keys')">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Tạo Key</span>
+                </div>
+                <div class="menu-item" onclick="showSection('manage-keys')">
+                    <i class="fas fa-list"></i>
+                    <span>Quản lý Key</span>
+                </div>
+                <div class="menu-item" onclick="showSection('validate-key')">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Kiểm tra Key</span>
+                </div>
+                <div class="menu-item" onclick="showSection('server-config')">
+                    <i class="fas fa-server"></i>
+                    <span>Cấu hình Server</span>
+                </div>
+                <div class="menu-item" onclick="showSection('api-docs')">
+                    <i class="fas fa-code"></i>
+                    <span>API & Shell</span>
+                </div>
+            </div>
+            
+            <div class="server-status">
+                <div class="status-indicator" id="serverStatus">
+                    <div class="dot"></div>
+                    <span>Đang kết nối...</span>
+                </div>
+            </div>
+        </div>
 
-        <!-- Dashboard -->
-        <div class="dashboard">
-            <div class="stats">
-                <div class="stat-card">
-                    <h3>Tổng số Key</h3>
-                    <p id="totalKeys">0</p>
-                </div>
-                <div class="stat-card active">
-                    <h3>Đang hoạt động</h3>
-                    <p id="activeKeys">0</p>
-                </div>
-                <div class="stat-card locked">
-                    <h3>Đã khóa</h3>
-                    <p id="lockedKeys">0</p>
-                </div>
-                <div class="stat-card suspended">
-                    <h3>Tạm ngưng</h3>
-                    <p id="suspendedKeys">0</p>
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <h1 id="pageTitle">Dashboard</h1>
+                <div class="header-actions">
+                    <div class="server-key-input">
+                        <input type="password" id="serverKey" placeholder="Nhập Server Key...">
+                        <button class="btn-connect" onclick="connectServer()">
+                            <i class="fas fa-plug"></i> Kết nối
+                        </button>
+                    </div>
+                    <button class="btn-notification">
+                        <i class="fas fa-bell"></i>
+                        <span class="badge" id="notificationCount">0</span>
+                    </button>
                 </div>
             </div>
 
-            <!-- Key Creation -->
-            <div class="card">
-                <h2><i class="fas fa-plus-circle"></i> Tạo Key Mới</h2>
-                <div class="form-group">
-                    <label>Số lượng:</label>
-                    <input type="number" id="keyCount" min="1" max="100" value="1">
+            <!-- Dashboard Section -->
+            <div class="content-section active" id="dashboard-section">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-key"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Tổng số Key</h3>
+                            <p id="totalKeys">0</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon active">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Đang hoạt động</h3>
+                            <p id="activeKeys">0</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon locked">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Đã khóa</h3>
+                            <p id="lockedKeys">0</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon suspended">
+                            <i class="fas fa-pause-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Tạm ngưng</h3>
+                            <p id="suspendedKeys">0</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Thời hạn (ngày):</label>
-                    <input type="number" id="keyDuration" min="1" value="30">
+
+                <div class="quick-actions">
+                    <h3>Thao tác nhanh</h3>
+                    <div class="actions-grid">
+                        <button class="action-btn" onclick="showSection('create-keys')">
+                            <i class="fas fa-plus"></i>
+                            <span>Tạo Key mới</span>
+                        </button>
+                        <button class="action-btn" onclick="showSection('server-config')">
+                            <i class="fas fa-cog"></i>
+                            <span>Cấu hình Server</span>
+                        </button>
+                        <button class="action-btn" onclick="generateServerKey()">
+                            <i class="fas fa-key"></i>
+                            <span>Tạo Server Key</span>
+                        </button>
+                        <button class="action-btn" onclick="showSection('api-docs')">
+                            <i class="fas fa-terminal"></i>
+                            <span>Shell Script</span>
+                        </button>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Ghi chú:</label>
-                    <input type="text" id="keyNote" placeholder="Ghi chú cho key...">
+
+                <div class="recent-activity">
+                    <h3>Hoạt động gần đây</h3>
+                    <div class="activity-list" id="activityList">
+                        <!-- Activity items will be loaded here -->
+                    </div>
                 </div>
-                <button class="btn-create" onclick="createKeys()">
-                    <i class="fas fa-magic"></i> Tạo Key
-                </button>
             </div>
 
-            <!-- Key List -->
-            <div class="card">
-                <h2><i class="fas fa-list"></i> Danh sách Key</h2>
-                <div class="search-bar">
-                    <input type="text" id="searchKey" placeholder="Tìm kiếm key...">
-                    <select id="filterStatus">
-                        <option value="all">Tất cả</option>
-                        <option value="active">Đang hoạt động</option>
-                        <option value="locked">Đã khóa</option>
-                        <option value="suspended">Tạm ngưng</option>
-                    </select>
+            <!-- Create Keys Section -->
+            <div class="content-section" id="create-keys-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-plus-circle"></i> Tạo Key Mới</h2>
+                    <p>Tạo hàng loạt key với cấu hình tùy chỉnh</p>
                 </div>
-                <div class="table-container">
+                
+                <div class="create-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Số lượng key</label>
+                            <input type="number" id="keyCount" min="1" max="1000" value="1">
+                            <small>Tối đa 1000 key mỗi lần tạo</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Độ dài key</label>
+                            <select id="keyLength">
+                                <option value="8">8 ký tự</option>
+                                <option value="16" selected>16 ký tự</option>
+                                <option value="24">24 ký tự</option>
+                                <option value="32">32 ký tự</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Thời hạn (ngày)</label>
+                            <input type="number" id="keyDuration" min="1" max="365" value="30">
+                            <small>Từ 1 đến 365 ngày</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Prefix (tùy chọn)</label>
+                            <input type="text" id="keyPrefix" placeholder="VD: API_, USER_">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label>Ghi chú</label>
+                        <textarea id="keyNote" placeholder="Mô tả hoặc ghi chú cho key..."></textarea>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button class="btn-primary" onclick="createKeys()">
+                            <i class="fas fa-magic"></i> Tạo Key
+                        </button>
+                        <button class="btn-secondary" onclick="resetCreateForm()">
+                            <i class="fas fa-redo"></i> Đặt lại
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="preview-section" id="keyPreview" style="display: none;">
+                    <h3>Key vừa tạo</h3>
+                    <div class="preview-box" id="previewContent"></div>
+                    <button class="btn-copy" onclick="copyCreatedKeys()">
+                        <i class="fas fa-copy"></i> Sao chép tất cả
+                    </button>
+                </div>
+            </div>
+
+            <!-- Manage Keys Section -->
+            <div class="content-section" id="manage-keys-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-list"></i> Quản lý Key</h2>
+                    <p>Tìm kiếm, lọc và quản lý tất cả key</p>
+                </div>
+                
+                <div class="filter-bar">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchKey" placeholder="Tìm kiếm theo key, ghi chú...">
+                    </div>
+                    
+                    <div class="filter-options">
+                        <select id="filterStatus">
+                            <option value="all">Tất cả trạng thái</option>
+                            <option value="active">Đang hoạt động</option>
+                            <option value="locked">Đã khóa</option>
+                            <option value="suspended">Tạm ngưng</option>
+                        </select>
+                        
+                        <select id="sortBy">
+                            <option value="created">Mới nhất</option>
+                            <option value="expires">Sắp hết hạn</option>
+                            <option value="key">A-Z</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
                     <table id="keysTable">
                         <thead>
                             <tr>
@@ -89,42 +254,229 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
-
-            <!-- Key Validator -->
-            <div class="card">
-                <h2><i class="fas fa-check-circle"></i> Kiểm tra Key</h2>
-                <div class="validator">
-                    <input type="text" id="validateKey" placeholder="Nhập key để kiểm tra...">
-                    <button onclick="validateKey()">Kiểm tra</button>
+                
+                <div class="table-footer">
+                    <div class="pagination">
+                        <button class="btn-pagination" onclick="prevPage()">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <span id="pageInfo">Trang 1 của 1</span>
+                        <button class="btn-pagination" onclick="nextPage()">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    <div class="table-stats">
+                        Hiển thị <span id="showingCount">0</span> trong tổng số <span id="totalCount">0</span> key
+                    </div>
                 </div>
-                <div id="validationResult"></div>
+            </div>
+
+            <!-- Validate Key Section -->
+            <div class="content-section" id="validate-key-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-check-circle"></i> Kiểm tra Key</h2>
+                    <p>Kiểm tra tính hợp lệ của key từ xa</p>
+                </div>
+                
+                <div class="validator-card">
+                    <div class="validator-input">
+                        <input type="text" id="validateKey" placeholder="Nhập key cần kiểm tra...">
+                        <button class="btn-validate" onclick="validateKey()">
+                            <i class="fas fa-search"></i> Kiểm tra
+                        </button>
+                    </div>
+                    
+                    <div class="validator-result" id="validationResult" style="display: none;">
+                        <!-- Result will be shown here -->
+                    </div>
+                    
+                    <div class="validator-examples">
+                        <h4>Ví dụ cho Shell Script:</h4>
+                        <pre><code>curl -X POST https://your-domain.com/api/validate \
+  -H "Content-Type: application/json" \
+  -d '{"key": "YOUR_KEY_HERE"}'</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Server Config Section -->
+            <div class="content-section" id="server-config-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-server"></i> Cấu hình Server</h2>
+                    <p>Quản lý Server Key và cài đặt hệ thống</p>
+                </div>
+                
+                <div class="config-cards">
+                    <div class="config-card">
+                        <h3><i class="fas fa-key"></i> Server Key</h3>
+                        <div class="config-content">
+                            <div class="current-key">
+                                <label>Server Key hiện tại:</label>
+                                <div class="key-display" id="currentKeyDisplay">
+                                    <span>••••••••••••••••</span>
+                                    <button class="btn-show" onclick="toggleKeyVisibility()">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="config-form">
+                                <h4>Tạo Server Key mới</h4>
+                                <input type="password" id="newServerKey" placeholder="Nhập Server Key mới...">
+                                <input type="password" id="confirmServerKey" placeholder="Xác nhận Server Key...">
+                                <button class="btn-danger" onclick="changeServerKey()">
+                                    <i class="fas fa-sync-alt"></i> Đổi Server Key
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="config-card">
+                        <h3><i class="fas fa-cog"></i> Cài đặt hệ thống</h3>
+                        <div class="config-content">
+                            <div class="setting-item">
+                                <label>Số key tối đa</label>
+                                <input type="number" id="maxKeys" min="100" max="10000" value="1000">
+                            </div>
+                            
+                            <div class="setting-item">
+                                <label>Key mặc định hết hạn (ngày)</label>
+                                <input type="number" id="defaultExpiry" min="1" max="365" value="30">
+                            </div>
+                            
+                            <div class="setting-item">
+                                <label>Tự động dọn dẹp key hết hạn</label>
+                                <label class="switch">
+                                    <input type="checkbox" id="autoCleanup" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            
+                            <button class="btn-primary" onclick="saveSettings()">
+                                <i class="fas fa-save"></i> Lưu cài đặt
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API & Shell Section -->
+            <div class="content-section" id="api-docs-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-code"></i> API & Shell Script</h2>
+                    <p>Tài liệu API và ví dụ Shell Script</p>
+                </div>
+                
+                <div class="api-docs">
+                    <div class="api-endpoint">
+                        <h3><i class="fas fa-exchange-alt"></i> Kiểm tra Key (Shell)</h3>
+                        <pre><code class="language-bash">#!/bin/bash
+
+KEY="YOUR_KEY_HERE"
+SERVER_URL="https://your-domain.com"
+
+RESPONSE=$(curl -s -X POST "$SERVER_URL/api/validate" \
+  -H "Content-Type: application/json" \
+  -d "{\"key\": \"$KEY\"}")
+
+VALID=$(echo $RESPONSE | grep -o '"valid":true')
+if [ ! -z "$VALID" ]; then
+    echo "✅ Key hợp lệ"
+    EXPIRES=$(echo $RESPONSE | grep -o '"expiresAt":"[^"]*"' | cut -d'"' -f4)
+    echo "📅 Hết hạn: $EXPIRES"
+else
+    echo "❌ Key không hợp lệ"
+    MSG=$(echo $RESPONSE | grep -o '"message":"[^"]*"' | cut -d'"' -f4)
+    echo "📝 Lý do: $MSG"
+fi</code></pre>
+                    </div>
+                    
+                    <div class="api-endpoint">
+                        <h3><i class="fas fa-list"></i> Lấy danh sách Key</h3>
+                        <pre><code class="language-bash">#!/bin/bash
+
+SERVER_KEY="YOUR_SERVER_KEY"
+SERVER_URL="https://your-domain.com"
+
+curl -X GET "$SERVER_URL/api/keys" \
+  -H "X-Server-Key: $SERVER_KEY" \
+  -H "Content-Type: application/json"</code></pre>
+                    </div>
+                    
+                    <div class="api-endpoint">
+                        <h3><i class="fas fa-plus"></i> Tạo Key từ Shell</h3>
+                        <pre><code class="language-bash">#!/bin/bash
+
+SERVER_KEY="YOUR_SERVER_KEY"
+SERVER_URL="https://your-domain.com"
+COUNT=5
+DAYS=30
+NOTE="Created from shell script"
+
+curl -X POST "$SERVER_URL/api/keys/create" \
+  -H "X-Server-Key: $SERVER_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"count\": $COUNT,
+    \"duration\": $DAYS,
+    \"note\": \"$NOTE\"
+  }"</code></pre>
+                    </div>
+                    
+                    <div class="api-endpoint">
+                        <h3><i class="fas fa-lock"></i> Khóa/Mở khóa Key</h3>
+                        <pre><code class="language-bash">#!/bin/bash
+
+SERVER_KEY="YOUR_SERVER_KEY"
+SERVER_URL="https://your-domain.com"
+KEY_ID="KEY_ID_HERE"
+ACTION="locked"  # hoặc "active", "suspended"
+
+curl -X PUT "$SERVER_URL/api/keys/$KEY_ID/status" \
+  -H "X-Server-Key: $SERVER_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{\"status\": \"$ACTION\"}"</code></pre>
+                    </div>
+                    
+                    <div class="api-download">
+                        <h3><i class="fas fa-download"></i> Tải Shell Script mẫu</h3>
+                        <p>Tải về các script mẫu đã cấu hình sẵn:</p>
+                        <div class="download-buttons">
+                            <button class="btn-primary" onclick="downloadScript('validate.sh')">
+                                <i class="fas fa-download"></i> validate.sh
+                            </button>
+                            <button class="btn-primary" onclick="downloadScript('create_keys.sh')">
+                                <i class="fas fa-download"></i> create_keys.sh
+                            </button>
+                            <button class="btn-primary" onclick="downloadScript('manage_keys.sh')">
+                                <i class="fas fa-download"></i> manage_keys.sh
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Modals -->
-    <div id="changeKeyModal" class="modal">
-        <div class="modal-content">
-            <h3>Đổi Server Key</h3>
-            <input type="password" id="oldKey" placeholder="Key hiện tại">
-            <input type="password" id="newKey" placeholder="Key mới">
-            <input type="password" id="confirmKey" placeholder="Xác nhận key mới">
-            <div class="modal-actions">
-                <button onclick="changeServerKey()">Đổi Key</button>
-                <button onclick="closeModal()">Hủy</button>
-            </div>
-        </div>
-    </div>
-
+    <!-- Modal -->
     <div id="keyDetailModal" class="modal">
         <div class="modal-content">
-            <h3>Chi tiết Key</h3>
-            <div id="keyDetails"></div>
-            <button onclick="closeModal()">Đóng</button>
+            <div class="modal-header">
+                <h3>Chi tiết Key</h3>
+                <button class="btn-close" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="keyDetails"></div>
         </div>
     </div>
 
     <script src="script.js"></script>
+    <script>
+        // Syntax highlighting
+        document.querySelectorAll('pre code').forEach((block) => {
+            block.classList.add('language-bash');
+        });
+    </script>
 </body>
 </html>
