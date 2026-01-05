@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remote Key Manager</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1><i class="fas fa-key"></i> Remote Key Manager</h1>
+            <div class="server-key-section">
+                <input type="password" id="serverKey" placeholder="Nhập Server Key...">
+                <button onclick="connectServer()">Kết nối</button>
+                <button onclick="showChangeKeyModal()">Đổi Key</button>
+            </div>
+        </header>
+
+        <!-- Dashboard -->
+        <div class="dashboard">
+            <div class="stats">
+                <div class="stat-card">
+                    <h3>Tổng số Key</h3>
+                    <p id="totalKeys">0</p>
+                </div>
+                <div class="stat-card active">
+                    <h3>Đang hoạt động</h3>
+                    <p id="activeKeys">0</p>
+                </div>
+                <div class="stat-card locked">
+                    <h3>Đã khóa</h3>
+                    <p id="lockedKeys">0</p>
+                </div>
+                <div class="stat-card suspended">
+                    <h3>Tạm ngưng</h3>
+                    <p id="suspendedKeys">0</p>
+                </div>
+            </div>
+
+            <!-- Key Creation -->
+            <div class="card">
+                <h2><i class="fas fa-plus-circle"></i> Tạo Key Mới</h2>
+                <div class="form-group">
+                    <label>Số lượng:</label>
+                    <input type="number" id="keyCount" min="1" max="100" value="1">
+                </div>
+                <div class="form-group">
+                    <label>Thời hạn (ngày):</label>
+                    <input type="number" id="keyDuration" min="1" value="30">
+                </div>
+                <div class="form-group">
+                    <label>Ghi chú:</label>
+                    <input type="text" id="keyNote" placeholder="Ghi chú cho key...">
+                </div>
+                <button class="btn-create" onclick="createKeys()">
+                    <i class="fas fa-magic"></i> Tạo Key
+                </button>
+            </div>
+
+            <!-- Key List -->
+            <div class="card">
+                <h2><i class="fas fa-list"></i> Danh sách Key</h2>
+                <div class="search-bar">
+                    <input type="text" id="searchKey" placeholder="Tìm kiếm key...">
+                    <select id="filterStatus">
+                        <option value="all">Tất cả</option>
+                        <option value="active">Đang hoạt động</option>
+                        <option value="locked">Đã khóa</option>
+                        <option value="suspended">Tạm ngưng</option>
+                    </select>
+                </div>
+                <div class="table-container">
+                    <table id="keysTable">
+                        <thead>
+                            <tr>
+                                <th>Key</th>
+                                <th>Trạng thái</th>
+                                <th>Ngày tạo</th>
+                                <th>Hết hạn</th>
+                                <th>Lần dùng cuối</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="keysBody">
+                            <!-- Keys will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Key Validator -->
+            <div class="card">
+                <h2><i class="fas fa-check-circle"></i> Kiểm tra Key</h2>
+                <div class="validator">
+                    <input type="text" id="validateKey" placeholder="Nhập key để kiểm tra...">
+                    <button onclick="validateKey()">Kiểm tra</button>
+                </div>
+                <div id="validationResult"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="changeKeyModal" class="modal">
+        <div class="modal-content">
+            <h3>Đổi Server Key</h3>
+            <input type="password" id="oldKey" placeholder="Key hiện tại">
+            <input type="password" id="newKey" placeholder="Key mới">
+            <input type="password" id="confirmKey" placeholder="Xác nhận key mới">
+            <div class="modal-actions">
+                <button onclick="changeServerKey()">Đổi Key</button>
+                <button onclick="closeModal()">Hủy</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="keyDetailModal" class="modal">
+        <div class="modal-content">
+            <h3>Chi tiết Key</h3>
+            <div id="keyDetails"></div>
+            <button onclick="closeModal()">Đóng</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
