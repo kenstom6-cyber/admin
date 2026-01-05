@@ -354,4 +354,87 @@ function showKeyDetails(keyId) {
 
 // Change server key
 async function changeServerKey() {
-    const oldKey = document.getElementById('old
+    const oldKey = document.getElementById('oldKey').value;
+    const newKey = document.getElementById('newKey').value;
+    const confirmKey = document.getElementById('confirmKey').value;
+    
+    if (!oldKey || !newKey || !confirmKey) {
+        alert('Vui lòng điền đầy đủ thông tin!');
+        return;
+    }
+    
+    if (newKey !== confirmKey) {
+        alert('Key mới và xác nhận không khớp!');
+        return;
+    }
+    
+    if (newKey.length < 8) {
+        alert('Key mới phải có ít nhất 8 ký tự!');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/change-server-key', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Server-Key': currentServerKey
+            },
+            body: JSON.stringify({ oldKey, newKey })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            alert(result.message);
+            closeModal();
+            document.getElementById('serverKey').value = newKey;
+            currentServerKey = newKey;
+        } else {
+            const error = await response.json();
+            alert('Lỗi: ' + error.error);
+        }
+    } catch (error) {
+        alert('Lỗi khi đổi key!');
+        console.error(error);
+    }
+}
+
+// Modal functions
+function showChangeKeyModal() {
+    if (!currentServerKey) {
+        alert('Vui lòng kết nối với Server Key trước!');
+        return;
+    }
+    
+    document.getElementById('changeKeyModal').style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('changeKeyModal').style.display = 'none';
+    document.getElementById('keyDetailModal').style.display = 'none';
+    
+    // Clear modal inputs
+    document.getElementById('oldKey').value = '';
+    document.getElementById('newKey').value = '';
+    document.getElementById('confirmKey').value = '';
+}
+
+// Event listeners for search and filter
+document.getElementById('searchKey').addEventListener('input', loadKeys);
+document.getElementById('filterStatus').addEventListener('change', loadKeys);
+
+// Auto-connect if server key is saved in localStorage
+document.addEventListener('DOMContentLoaded', function() {
+    const savedKey = localStorage.getItem('serverKey');
+    if (savedKey) {
+        document.getElementById('serverKey').value = savedKey;
+        connectServer();
+    }
+});
+
+// Save server key when changed
+document.getElementById('serverKey').addEventListener('change', function() {
+    if (currentServerKey) {
+        localStorage.setItem('serverKey', currentServerKey);
+    }
+});
