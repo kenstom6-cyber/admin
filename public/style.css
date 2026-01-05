@@ -1147,3 +1147,77 @@ input:checked + .slider:before {
         grid-template-columns: 1fr 1fr;
     }
 }
+/* Notification Styles */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transform: translateX(150%);
+    transition: transform 0.3s ease;
+    z-index: 3000;
+    min-width: 300px;
+}
+
+.notification.show {
+    transform: translateX(0);
+}
+
+.notification-success {
+    border-left: 4px solid var(--success);
+}
+
+.notification-error {
+    border-left: 4px solid var(--danger);
+}
+
+.notification-warning {
+    border-left: 4px solid var(--warning);
+}
+
+.notification i {
+    font-size: 20px;
+}
+
+.notification-success i {
+    color: var(--success);
+}
+
+.notification-error i {
+    color: var(--danger);
+}
+
+.notification-warning i {
+    color: var(--warning);
+}
+
+/* Code Highlighting */
+pre code.language-bash {
+    color: #ecf0f1;
+}
+
+pre code.language-bash .comment {
+    color: #95a5a6;
+}
+
+pre code.language-bash .string {
+    color: #2ecc71;
+}
+
+pre code.language-bash .keyword {
+    color: #3498db;
+}
+
+pre code.language-bash .function {
+    color: #9b59b6;
+}
+
+pre code.language-bash .variable {
+    color: #e74c3c;
+}
